@@ -2,6 +2,9 @@
 if (empty($_GET['table'])) {
   die('No table provided');
 }
+if (!tableExists($conn, $db, $_GET['table'])) {
+  die('delete.php: Invalid table name');
+}
 require_once __DIR__ . '/includes/db.php';
 ?>
 <!DOCTYPE html>

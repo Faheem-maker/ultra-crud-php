@@ -1,12 +1,23 @@
+<?php
+if (!empty($_GET['update_id'])) {
+    $update_id = $_GET['update_id'];
+    $stmt = mysqli_prepare($conn, "SELECT * FROM `$table` WHERE `id` = ?");
+    $stmt->bind_param('s', $update_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $update_record = mysqli_fetch_assoc($result);
+}
+?>
+
 <div>
-    <form action="insert.php?table=<?= $table ?>" method="post" id="dynamic-form">
+    <form action="<?= empty($update_record) ? 'insert' : 'update' ?>.php?table=<?=$table ?>" method="post">
         <?php
         $columns = mysqli_query($conn, "SELECT `COLUMN_NAME`, `DATA_TYPE`, `COLUMN_KEY`
-            FROM `INFORMATION_SCHEMA`.`COLUMNS` 
+            FROM `INFORMATION_SCHEMA`.`COLUMNS`
             WHERE `TABLE_SCHEMA`='ultra_crud'
             AND `TABLE_NAME`= '$table';");
         while ($column = mysqli_fetch_assoc($columns)):
-            if ($column['COLUMN_KEY'] == 'PRI') {
+            if ($column['COLUMN_KEY'] == 'PRI' && empty($update_record)) {
                 continue;
             }
         ?>
@@ -23,7 +34,12 @@
             default:
             echo 'text';
         }
-        ?>" name="<?= $table ?>[<?= $column['COLUMN_NAME']; ?>]" id="dynamic_input_<?= $column['COLUMN_NAME']; ?>">
+        ?>" 
+        name="<?= $table ?>[<?= $column['COLUMN_NAME']; ?>]"
+        id="dynamic_input_<?= $column['COLUMN_NAME']; ?>"
+        value="<?= $update_record[$column['COLUMN_NAME']] ?? '' ?>"
+        <?= $column['COLUMN_KEY'] == 'PRI' ? 'readonly' : '' ?>>
+
         </div>
         <?php endwhile; ?>
         <div class="form-group d-flex justify-content-end">
@@ -31,31 +47,3 @@
         </div>
     </form>
 </div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function setupDynamicForm() {
-        const $form = $("#dynamic-form");
-        const $table = $("#dynamic-table");
-
-
-        $form.submit(function submitAjaxForm(e) {
-            e.preventDefault();
-            const action = $form.attr("action");
-            $.ajax({
-                url: action,
-                data: new FormData($form[0]),
-                type: 'POST',
-                processData: false,
-                contentType: false,
-            }).then(function checkResponse(res) {
-                let data = JSON.parse(res);
-                let tr = '<tr>';
-                tr += Object.values(data).reduce(function createTableCell(html, value) {
-                    return html + `<td>${value}</td>`;
-                }, '');
-                tr += '</tr>';
-                $table.html($table.html() + tr);
-            });
-        });
-    });
-</script>
